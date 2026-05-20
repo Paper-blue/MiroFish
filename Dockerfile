@@ -15,13 +15,13 @@ COPY package.json package-lock.json ./
 COPY frontend/package.json frontend/package-lock.json ./frontend/
 COPY backend/pyproject.toml backend/uv.lock ./backend/
 
-# 先安装 CPU-only torch，避免 camel-ai 拉取带 CUDA 的完整版本（~2GB）
-RUN pip install --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
-
-# 安装依赖（Node + Python）
+# 安装 Node 依赖 + Python 依赖（uv sync 会装 torch 2.9.1+CUDA）
 RUN npm ci \
   && npm ci --prefix frontend \
   && cd backend && uv sync --frozen
+
+# 强制将 torch 替换为 CPU-only 版本（节省 ~1.8GB 磁盘和内存）
+RUN uv pip install --system torch --index-url https://download.pytorch.org/whl/cpu
 
 # 复制项目源码
 COPY . .
