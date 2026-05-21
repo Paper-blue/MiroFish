@@ -49,7 +49,7 @@ def create_app(config_class=Config):
     if should_log_startup:
         logger.info("已注册模拟进程清理函数")
     
-    # Basic Auth — 仅在设置 AUTH_USER 时启用，保护所有路由
+    # Basic Auth — enabled only when AUTH_USER is set, protects all routes
     @app.before_request
     def basic_auth():
         auth_user = os.environ.get('AUTH_USER')
