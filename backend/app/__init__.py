@@ -9,7 +9,8 @@ import warnings
 # 需要在所有其他导入之前设置
 warnings.filterwarnings("ignore", message=".*resource_tracker.*")
 
-from flask import Flask, request
+import base64
+from flask import Flask, request, Response
 from flask_cors import CORS
 
 from .config import Config
@@ -48,6 +49,27 @@ def create_app(config_class=Config):
     if should_log_startup:
         logger.info("已注册模拟进程清理函数")
     
+    # Basic Auth — 仅在设置 AUTH_USER 时启用，保护所有路由
+    @app.before_request
+    def basic_auth():
+        auth_user = os.environ.get('AUTH_USER')
+        auth_pass = os.environ.get('AUTH_PASS', '')
+        if not auth_user:
+            return
+        header = request.headers.get('Authorization', '')
+        if header.startswith('Basic '):
+            try:
+                decoded = base64.b64decode(header[6:]).decode('utf-8')
+                sep = decoded.index(':')
+                if decoded[:sep] == auth_user and decoded[sep+1:] == auth_pass:
+                    return
+            except Exception:
+                pass
+        return Response(
+            'Unauthorized', 401,
+            {'WWW-Authenticate': 'Basic realm="MiroFish"'}
+        )
+
     # 请求日志中间件
     @app.before_request
     def log_request():
